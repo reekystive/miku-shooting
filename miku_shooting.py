@@ -1,6 +1,7 @@
 import pygame
 from pygame import *
 from time import sleep
+from random import random
 
 pygame.init()
 pygame.display.set_caption("Miku Shooting")
@@ -11,6 +12,8 @@ player_width = 106
 bullet_det_height = 80
 bullet_width = 48
 bullet_height = 32
+rabbit_height = 96
+rabbit_width = 96
 screen = pygame.display.set_mode((width, height))
 screen.fill((0, 0, 0))
 
@@ -22,6 +25,8 @@ player_shoot_left = pygame.image.load(base_loc + "shoot_left.png")
 bg = pygame.image.load(base_loc + "background.png")
 bg_cloud = pygame.image.load(base_loc + "background_cloud.png")
 bullet = pygame.image.load(base_loc + "heart.png")
+rabbit = pygame.image.load(base_loc + "rabbit_1.png")
+rabbit_left = pygame.image.load(base_loc + "rabbit_1_left.png")
 
 rect = player.get_rect()
 rect.bottom = height
@@ -30,9 +35,10 @@ rect.left = 0
 delta = [0, 0]
 speed = 5.0
 gravity = 8.0
-jump_speed = 5.0
+jump_speed = 7.0
 bullet_speed = 10.0
 bullet_cd_time = 10
+rabbit_speed = 10.0
 
 key_stats = {'w_down': False,
              'a_down': False,
@@ -49,6 +55,7 @@ stats = {'moving': 'stand',
           'pos_y': 0.0}
 
 bullets = []
+rabbits = []
 
 def get_vy(t):
     vy = jump_speed - gravity*t
@@ -119,6 +126,25 @@ def clear_bullets():
            or bullets[i]['pos'][1] + bullet_height < 0 \
            or bullets[i]['pos'][1] > height:
             del bullets[i]
+
+def generate_rabbit(time):
+    if random() < 0.01:
+        rabbits.append({'pos': [-1.5*width - rabbit_width/2, 0], 'direction': 'right'})
+    if random() < 0.01:
+        rabbits.append({'pos': [1.5*width + rabbit_width/2, 0], 'direction': 'left'})
+
+def move_rabbits():
+    for rab in rabbits:
+        if rab['direction'] == 'left':
+            rab['pos'][0] -= rabbit_speed
+        else:
+            rab['pos'][0] += rabbit_speed
+
+def clear_rabbits():
+    for i in range(len(rabbits) - 1, -1, -1):
+        x = rabbits[i]['pos'][0]
+        if x < -1.5*width - rabbit_width/2 or x > 1.5*width + rabbit_width/2:
+            del rabbits[i]
 
 running = True
 time = 0
@@ -202,6 +228,17 @@ while running:
     screen.blit(bg_cloud, ((pos_cloud - cur_view_left) % width , 0))
     screen.blit(bg_cloud, ((pos_cloud - cur_view_left) % width - width, 0))
 
+    # Rabbits!
+    generate_rabbit(time)
+    move_rabbits()
+    clear_rabbits()
+
+    for rab in rabbits:
+        if rab['direction'] == 'right':
+            screen.blit(rabbit, [rab['pos'][0] - rabbit_width/2 - cur_view_left, height - (rab['pos'][1] + rabbit_height)])
+        else:
+            screen.blit(rabbit_left, [rab['pos'][0] - rabbit_width/2 - cur_view_left, height - (rab['pos'][1] + rabbit_height)])
+
     if stats['forward'] == 'right':
         if stats['shooting']:
             screen.blit(player_shoot, rect)
@@ -235,5 +272,6 @@ while running:
     # print(stats['pos_x'])
     # print(cur_view_left)
     # print(len(bullets))
+    # print(len(rabbits))
 
 pygame.quit()
