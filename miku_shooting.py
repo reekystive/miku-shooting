@@ -220,13 +220,13 @@ while running:
     rect.bottom = int(height - stats['pos_y'])
     limit_rect()
 
-    screen.blit(bg, (-cur_view_left - width/2, 0))
-    screen.blit(bg, (-cur_view_left - width/2 - width, 0))
-    screen.blit(bg, (-cur_view_left - width/2 + width, 0))
+    screen.blit(bg, (int(-cur_view_left - width/2), 0))
+    screen.blit(bg, (int(-cur_view_left - width/2) - width, 0))
+    screen.blit(bg, (int(-cur_view_left - width/2) + width, 0))
 
     pos_cloud = int(time / 5)
-    screen.blit(bg_cloud, ((pos_cloud - cur_view_left) % width , 0))
-    screen.blit(bg_cloud, ((pos_cloud - cur_view_left) % width - width, 0))
+    screen.blit(bg_cloud, (int(pos_cloud - cur_view_left) % width , 0))
+    screen.blit(bg_cloud, (int(pos_cloud - cur_view_left) % width - width, 0))
 
     # Rabbits!
     generate_rabbit(time)
@@ -235,9 +235,9 @@ while running:
 
     for rab in rabbits:
         if rab['direction'] == 'right':
-            screen.blit(rabbit, [rab['pos'][0] - rabbit_width/2 - cur_view_left, height - (rab['pos'][1] + rabbit_height)])
+            screen.blit(rabbit, [int(rab['pos'][0] - rabbit_width/2 - cur_view_left), int(height - (rab['pos'][1] + rabbit_height))])
         else:
-            screen.blit(rabbit_left, [rab['pos'][0] - rabbit_width/2 - cur_view_left, height - (rab['pos'][1] + rabbit_height)])
+            screen.blit(rabbit_left, [int(rab['pos'][0] - rabbit_width/2 - cur_view_left), int(height - (rab['pos'][1] + rabbit_height))])
 
     if stats['forward'] == 'right':
         if stats['shooting']:
@@ -262,7 +262,7 @@ while running:
     clear_bullets()
 
     for bu in bullets:
-        screen.blit(bullet, [bu['pos'][0] - bullet_width/2 - cur_view_left, height - (bu['pos'][1] + bullet_height)])
+        screen.blit(bullet, [int(bu['pos'][0] - bullet_width/2 - cur_view_left), int(height - (bu['pos'][1] + bullet_height))])
 
     pygame.display.update()
 
