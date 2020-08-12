@@ -1,9 +1,12 @@
 import pygame
 from pygame import *
+from time import sleep
 
 pygame.init()
 
-width, height = 640, 240
+width, height = 960, 540
+player_height = 128
+player_width = 106
 screen = pygame.display.set_mode((width, height))
 screen.fill((0, 0, 0))
 
@@ -12,16 +15,17 @@ player = pygame.image.load(base_loc + "stand.png")
 player_left = pygame.image.load(base_loc + "stand_left.png")
 player_shoot = pygame.image.load(base_loc + "shoot.png")
 player_shoot_left = pygame.image.load(base_loc + "shoot_left.png")
+bg = pygame.image.load(base_loc + "background.png")
+bg_cloud = pygame.image.load(base_loc + "background_cloud.png")
 
 rect = player.get_rect()
 rect.bottom = height
 rect.left = 0
 
 delta = [0, 0]
-speed = 2.0
-
-gravity = 10.0
-jump_speed = 6.0
+speed = 5.0
+gravity = 8.0
+jump_speed = 5.0
 
 key_stats = {'w_down': False,
              'a_down': False,
@@ -33,7 +37,9 @@ key_stats = {'w_down': False,
 stats = {'moving': 'stand',
          'forward': 'right',
          'shooting': False,
-          'jumping': False}
+          'jumping': False,
+          'pos_x': 0.0,
+          'pos_y': 0.0}
 
 def get_vy(t):
     vy = jump_speed - gravity*t
@@ -64,6 +70,11 @@ def detect_key_stats(event):
 
 def limit_in_view():
     global rect
+    global stats
+    if stats['pos_x'] < -(1.5*width - player_width / 2):
+        stats['pos_x'] = -(1.5*width - player_width / 2)
+    if stats['pos_x'] > (1.5*width - player_width / 2):
+        stats['pos_x'] = (1.5*width - player_width / 2)
     if rect.left < 0:
         rect.left = 0
     if rect.right > width:
@@ -73,29 +84,17 @@ def limit_in_view():
     if rect.bottom > height:
         rect.bottom = height
 
-# Useless
-blue = 0
-reverse = False
-def useless_background():
-    global blue
-    global reverse
-    if blue == 100:
-        reverse = False
-    if blue == 150:
-        reverse = True
-    if reverse:
-        blue -= 1
-    else:
-        blue += 1
-
 running = True
 time = 0
 jump_time = 0
+cur_view_left = 0
 
 while running:
     for event in pygame.event.get():
         # Quit the game
         if event.type == pygame.QUIT:
+            running = False
+        if event.type == KEYDOWN and event.key == K_ESCAPE:
             running = False
         # Detect the key event
         detect_key_stats(event)
@@ -114,8 +113,8 @@ while running:
         stats['jumping'] = True
 
     if stats['jumping']:
-        delta[1] = -get_vy((time - jump_time) * 0.03)
-        if rect.bottom >= height and delta[1] > 0:
+        delta[1] = get_vy((time - jump_time) * 0.03)
+        if rect.bottom >= height and delta[1] < 0:
             stats['jumping'] = False
             delta[1] = 0
 
@@ -140,11 +139,31 @@ while running:
         delta[0] = -speed
         stats['forward'] = 'left'
 
-    rect = rect.move(delta)
+    stats['pos_x'] += delta[0]
+    stats['pos_y'] += delta[1]
+
+    if stats['pos_x'] + width / 2 - player_width / 2 - 32 < cur_view_left:
+        cur_view_left = stats['pos_x'] + width / 2 - player_width / 2 - 32
+    if cur_view_left < -width:
+        cur_view_left = -width
+    if stats['pos_x'] + width / 2 + player_width / 2 + 32 > cur_view_left + width:
+        cur_view_left = stats['pos_x'] + width / 2 + player_width / 2 + 32 - width
+    if cur_view_left > width:
+        cur_view_left = width
+
+    rect.left = int(stats['pos_x'] + width / 2 - player_width / 2 - cur_view_left)
+    rect.bottom = int(height - stats['pos_y'])
 
     limit_in_view()
 
-    screen.fill((100, 50, blue))
+    screen.blit(bg, (-cur_view_left, 0))
+    screen.blit(bg, (-cur_view_left - width, 0))
+    screen.blit(bg, (-cur_view_left + width, 0))
+
+    pos_cloud = int((time / 5) % width)
+    screen.blit(bg_cloud, (pos_cloud, 0))
+    screen.blit(bg_cloud, (pos_cloud - width, 0))
+
     if stats['forward'] == 'right':
         if stats['shooting']:
             screen.blit(player_shoot, rect)
@@ -158,9 +177,10 @@ while running:
 
     pygame.display.update()
 
-    # Useless
-    useless_background()
+    sleep(0.002)
 
     time += 1
+    # print(stats['pos_x'])
+    # print(cur_view_left)
 
 pygame.quit()
