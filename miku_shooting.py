@@ -3,6 +3,7 @@ from pygame import *
 from time import sleep
 
 pygame.init()
+pygame.display.set_caption("Miku Shooting")
 
 width, height = 960, 540
 player_height = 128
@@ -68,13 +69,8 @@ def detect_key_stats(event):
         if event.key == K_j:
             key_stats['j_down'] = False
 
-def limit_in_view():
+def limit_rect():
     global rect
-    global stats
-    if stats['pos_x'] < -(1.5*width - player_width / 2):
-        stats['pos_x'] = -(1.5*width - player_width / 2)
-    if stats['pos_x'] > (1.5*width - player_width / 2):
-        stats['pos_x'] = (1.5*width - player_width / 2)
     if rect.left < 0:
         rect.left = 0
     if rect.right > width:
@@ -84,10 +80,17 @@ def limit_in_view():
     if rect.bottom > height:
         rect.bottom = height
 
+def limit_pos():
+    global stats
+    if stats['pos_x'] < -(1.5*width - player_width/2):
+        stats['pos_x'] = -(1.5*width - player_width/2)
+    if stats['pos_x'] > (1.5*width - player_width/2):
+        stats['pos_x'] = (1.5*width - player_width/2)
+
 running = True
 time = 0
 jump_time = 0
-cur_view_left = 0
+cur_view_left = -width/2
 
 while running:
     for event in pygame.event.get():
@@ -142,23 +145,24 @@ while running:
     stats['pos_x'] += delta[0]
     stats['pos_y'] += delta[1]
 
-    if stats['pos_x'] + width / 2 - player_width / 2 - 32 < cur_view_left:
-        cur_view_left = stats['pos_x'] + width / 2 - player_width / 2 - 32
-    if cur_view_left < -width:
-        cur_view_left = -width
-    if stats['pos_x'] + width / 2 + player_width / 2 + 32 > cur_view_left + width:
-        cur_view_left = stats['pos_x'] + width / 2 + player_width / 2 + 32 - width
-    if cur_view_left > width:
-        cur_view_left = width
+    limit_pos()
 
-    rect.left = int(stats['pos_x'] + width / 2 - player_width / 2 - cur_view_left)
+    if stats['pos_x'] - player_width/2 - 64 < cur_view_left:
+        cur_view_left = stats['pos_x'] - player_width/2 - 64
+    if cur_view_left < -width*1.5:
+        cur_view_left = -width*1.5
+    if stats['pos_x'] + player_width/2 + 64 > cur_view_left + width:
+        cur_view_left = stats['pos_x'] + player_width/2 + 64 - width
+    if cur_view_left > width*0.5:
+        cur_view_left = width*0.5
+
+    rect.left = int(stats['pos_x'] - player_width/2 - cur_view_left)
     rect.bottom = int(height - stats['pos_y'])
+    limit_rect()
 
-    limit_in_view()
-
-    screen.blit(bg, (-cur_view_left, 0))
-    screen.blit(bg, (-cur_view_left - width, 0))
-    screen.blit(bg, (-cur_view_left + width, 0))
+    screen.blit(bg, (-cur_view_left - width/2, 0))
+    screen.blit(bg, (-cur_view_left - width/2 - width, 0))
+    screen.blit(bg, (-cur_view_left - width/2 + width, 0))
 
     pos_cloud = int((time / 5) % width)
     screen.blit(bg_cloud, (pos_cloud, 0))
