@@ -8,6 +8,9 @@ pygame.display.set_caption("Miku Shooting")
 width, height = 960, 540
 player_height = 128
 player_width = 106
+bullet_det_height = 80
+bullet_width = 48
+bullet_height = 32
 screen = pygame.display.set_mode((width, height))
 screen.fill((0, 0, 0))
 
@@ -18,6 +21,7 @@ player_shoot = pygame.image.load(base_loc + "shoot.png")
 player_shoot_left = pygame.image.load(base_loc + "shoot_left.png")
 bg = pygame.image.load(base_loc + "background.png")
 bg_cloud = pygame.image.load(base_loc + "background_cloud.png")
+bullet = pygame.image.load(base_loc + "heart.png")
 
 rect = player.get_rect()
 rect.bottom = height
@@ -27,6 +31,8 @@ delta = [0, 0]
 speed = 5.0
 gravity = 8.0
 jump_speed = 5.0
+bullet_speed = 10.0
+bullet_cd_time = 10
 
 key_stats = {'w_down': False,
              'a_down': False,
@@ -41,6 +47,8 @@ stats = {'moving': 'stand',
           'jumping': False,
           'pos_x': 0.0,
           'pos_y': 0.0}
+
+bullets = []
 
 def get_vy(t):
     vy = jump_speed - gravity*t
@@ -87,10 +95,36 @@ def limit_pos():
     if stats['pos_x'] > (1.5*width - player_width/2):
         stats['pos_x'] = (1.5*width - player_width/2)
 
+def generate_bullet():
+    y = stats['pos_y'] + bullet_det_height - bullet_height/2
+    x = stats['pos_x']
+    if stats['forward'] == 'left':
+        x -= player_width/2 + bullet_width/2 - 24
+    else:
+        x += player_width/2 + bullet_width/2 - 24
+    bullets.append({'pos': [x, y], 'direction': stats['forward'], 'relative_speed': delta})
+
+def move_bullets():
+    for bu in bullets:
+        if bu['direction'] == 'left':
+            bu['pos'][0] = bu['pos'][0] - bullet_speed + bu['relative_speed'][0]
+        else:
+            bu['pos'][0] = bu['pos'][0] + bullet_speed + bu['relative_speed'][0]
+        bu['pos'][1] += bu['relative_speed'][1]
+
+def clear_bullets():
+    for i in range(len(bullets) - 1, -1, -1):
+        if bullets[i]['pos'][0] + bullet_width/2 < -1.5*width \
+           or bullets[i]['pos'][0] - bullet_width/2 > 1.5*width \
+           or bullets[i]['pos'][1] + bullet_height < 0 \
+           or bullets[i]['pos'][1] > height:
+            del bullets[i]
+
 running = True
 time = 0
 jump_time = 0
 cur_view_left = -width/2
+bullet_remain_cd_time = 0
 
 while running:
     for event in pygame.event.get():
@@ -104,7 +138,7 @@ while running:
 
     delta = [0, 0]
 
-    #Shoot! Shoot!!!
+    # Shoot! Shoot!!!
     if key_stats['j_down']:
         stats['shooting'] = True
     else:
@@ -164,9 +198,9 @@ while running:
     screen.blit(bg, (-cur_view_left - width/2 - width, 0))
     screen.blit(bg, (-cur_view_left - width/2 + width, 0))
 
-    pos_cloud = int((time / 5) % width)
-    screen.blit(bg_cloud, (pos_cloud, 0))
-    screen.blit(bg_cloud, (pos_cloud - width, 0))
+    pos_cloud = int(time / 5)
+    screen.blit(bg_cloud, ((pos_cloud - cur_view_left) % width , 0))
+    screen.blit(bg_cloud, ((pos_cloud - cur_view_left) % width - width, 0))
 
     if stats['forward'] == 'right':
         if stats['shooting']:
@@ -179,6 +213,20 @@ while running:
         else:
             screen.blit(player_left, rect)
 
+    # Shooting! Bullet!!
+    if bullet_remain_cd_time == 0 and stats['shooting']:
+        generate_bullet()
+        bullet_remain_cd_time = bullet_cd_time
+
+    if bullet_remain_cd_time > 0:
+        bullet_remain_cd_time -= 1
+
+    move_bullets()
+    clear_bullets()
+
+    for bu in bullets:
+        screen.blit(bullet, [bu['pos'][0] - bullet_width/2 - cur_view_left, height - (bu['pos'][1] + bullet_height)])
+
     pygame.display.update()
 
     sleep(0.002)
@@ -186,5 +234,6 @@ while running:
     time += 1
     # print(stats['pos_x'])
     # print(cur_view_left)
+    # print(len(bullets))
 
 pygame.quit()
